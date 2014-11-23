@@ -1,0 +1,14 @@
+calculator.hpp是一个简单的计算器模板，他支持3种类型的数据的计算。
+1.整型
+支持int,long,long long这3种类型的所有c语言内置对运算以及乘法即**
+使用该类型需在使用文件中#define CALCULATOR_INT
+请参考example_int.cc
+2.浮点
+支持float，double，float double这3种类型的+-*/运算
+使用该类型需在使用文件种#define CALCULATOR_FLOAT
+请参考example_double.cc
+3.bigint
+支持bigint这种自定义对不限位数对整型+-*/运算
+使用该类型需在使用文件种#define CALCULATOR_BIGINT，另外还需在工程中加入bigint.cc,bigint.h这2个文件
+请参考example_bigint.cc
+您还可以通过简单对修改calculator.hpp来支持自定义的数据类型计算器

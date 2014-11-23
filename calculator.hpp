@@ -1,4 +1,6 @@
-#include<iostream>
+#ifndef CALCULATOR_HPP
+#define CALCULATOR_HPP
+
 #include<string>
 #include<cctype>
 #include<map>
@@ -6,8 +8,6 @@
 #include<sstream>
 #include<functional>
 #include<algorithm>
-using std::cout;
-using std::endl;
 namespace tiny
 {
 class calculate_error:public std::runtime_error
@@ -31,7 +31,7 @@ private:
 
 	struct operation
 	{
-		operation(std::function<T(T,T)> op_ = [](T,T){return T(9999);}, precedence pre_ = precedence::NONE, associativity assoc_ = associativity::LEFT)
+		operation(std::function<T(T,T)> op_ = [](T,T){return T(123456);}, precedence pre_ = precedence::NONE, associativity assoc_ = associativity::LEFT)
 		:op(op_), pre(pre_), assoc(assoc_)
 		{
 		}
@@ -46,7 +46,7 @@ public:
 	void unexpected(const std::string& expect = "")
 	{
 		std::stringstream ss;
-		ss << "unexpected token at " << index_-expr_.begin() << ": " << std::string(index_-1, expr_.end()) << std::endl;
+		ss << "unexpected token at index " << index_-expr_.begin() << ": " << std::string(index_-1, expr_.end()) << std::endl;
 		if(!expect.empty())
 			ss << "expect: " << expect <<std::endl;
 		throw calculate_error(ss.str());
@@ -59,22 +59,34 @@ public:
 
 	T parse_number()
 	{
-		//using std::stoll;
 		auto beg = index_;	
 		index_ = std::find_if_not(beg, end_, [](char ch)
 				{
-				for(int i='0'; i!='9'; ++i)
-				if(i==ch)
+				if((ch>='0' && ch<='9') || (ch=='.'))
 				return true;
 				return false;
 				});
-		std::string number = string(beg, index_);
+		std::string number = std::string(beg, index_);
+#ifdef CALCULATOR_BIGINT
+		return T(number);
+#endif
+#ifdef CALCULATOR_INT
 		if(typeid(T) == typeid(int))
 			return std::stoi(number);
 		else if(typeid(T) == typeid(long))
 			return std::stol(number);
-		else 
+		else if(typeid(T) == typeid(long long))
 			return std::stoll(number);
+#endif
+#ifdef CALCULATOR_FLOAT
+		if(typeid(T) == typeid(float))
+	    	return std::stof(number);
+		else if(typeid(T) == typeid(double))
+			return std::stod(number);
+		else
+			return std::stold(number);
+#endif
+		return 0;
 	}
 
 	void skip_space()
@@ -99,8 +111,10 @@ public:
 		++index_;
 		if(ch == '-')
 			return -read_number();
+#ifdef CALCULATOR_INT
 		else if(ch == '~')
 			return ~read_number();
+#endif
 		else if(ch == '(')
 		{
 			int old_num = ++left_backet_;
@@ -120,6 +134,7 @@ public:
 		if(is_end())
 			return operation();
 		char ch = get_char();
+#ifdef CALCULATOR_INT
 		if(ch == '*' || ch == '<' || ch == '>')
 		{
 			if((++index_ != end_) && (get_char() == ch))
@@ -130,6 +145,7 @@ public:
 			else
 				--index_;
 		}
+#endif
 		++index_;
 		auto it = ma.find(ch);
 		if(it != ma.end())
@@ -174,23 +190,27 @@ private:
 	int left_backet_ = 0;
 	const std::map<int, operation> ma=
 	{
-		{'*'*256+'*',	 {[](T a, T b){return std::pow(a,b);}, precedence::POWER, associativity::RIGHT}},
 		{'*',	 {std::multiplies<T>(), precedence::MUL}},
 		{'/',	 {std::divides<T>(), precedence::MUL}},
-		{'%',	 {std::modulus<T>(), precedence::MUL}},
 		{'+',	 {std::plus<T>(), precedence::PLUS}},
 		{'-',	 {std::minus<T>(), precedence::PLUS}},
+#ifdef CALCULATOR_INT
+		{'*'*256+'*',	 {[](T a, T b){return std::pow(a,b);}, precedence::POWER, associativity::RIGHT}},
+		{'%',	 {std::modulus<T>(), precedence::MUL}},
 		{'<'*256+'<',	 {[](T a, T b){return a<<b;}, precedence::SHIFT}},
 		{'>'*256+'>',	 {[](T a, T b){return a>>b;}, precedence::SHIFT}},
 		{'&',	 {[](T a, T b){return a&b;}, precedence::AND}},
 		{'^',	 {[](T a, T b){return a^b;}, precedence::XOR}},
 		{'|',	 {[](T a, T b){return a|b;}, precedence::OR}},
+#endif
 	};
 };
 
-template<typename T=int> T calculate(const std::string& expr)
+template<typename T=double> T calculate(const std::string& expr)
 {
 	calculator<T> ca(expr);
 	return ca.eval();
 }
 }
+
+#endif
