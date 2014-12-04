@@ -40,6 +40,18 @@ private:
 		associativity assoc;
 	};
 
+	T stot(const std::string& s, float) { return stof(s); } 
+	T stot(const std::string& s, double) { return stod(s); } 
+	T stot(const std::string& s, long double) { return stold(s); } 
+	T stot(const std::string& s, int) { return stoi(s); } 
+	T stot(const std::string& s, long) { return stol(s); } 
+	T stot(const std::string& s, long long) { return stoll(s); }
+
+#ifdef CALCULATOR_BIGINT
+	T stot(const std::string& s, T) { return T(s); }
+#endif
+
+
 public:
 	calculator(const std::string& expr):expr_(expr){}
 
@@ -62,32 +74,13 @@ public:
 		auto beg = index_;	
 		index_ = std::find_if_not(beg, end_, [](char ch)
 				{
-				if((ch>='0' && ch<='9') || (ch=='.'))
-				return true;
-				return false;
+					if((ch>='0' && ch<='9') || (ch=='.'))
+					return true;
+					return false;
 				});
 		std::string number = std::string(beg, index_);
-#ifdef CALCULATOR_BIGINT
-		return T(number);
-#endif
-#ifdef CALCULATOR_INT
-		if(typeid(T) == typeid(int))
-			return std::stoi(number);
-		else if(typeid(T) == typeid(long))
-			return std::stol(number);
-		else if(typeid(T) == typeid(long long))
-			return std::stoll(number);
-#endif
-#ifdef CALCULATOR_FLOAT
-		if(typeid(T) == typeid(float))
-	    	return std::stof(number);
-		else if(typeid(T) == typeid(double))
-			return std::stod(number);
-		else
-			return std::stold(number);
-#endif
-		return 0;
-	}
+		return stot(number, T(0));
+}
 
 	void skip_space()
 	{
